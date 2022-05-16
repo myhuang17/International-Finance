@@ -1,21 +1,23 @@
 library(quantmod)
 library(forecast)
+
+#PART-0 COLLECT DATA===============================================================
 # World market indices: https://finance.yahoo.com/world-indices/
 indexnames=c("^KS11","^JKSE","^N225","^TWII","^HSI","^STI","^DJI",
              "^BVSP","^FTSE","^FCHI","^GDAXI","^GSPC","^BFX","^MXX")
-getSymbols(indexnames,from="2010-01-01", adjust=TRUE)
+getSymbols(indexnames,from="2010-01-01", to="2022-05-13", adjust=TRUE)
 indexdata = cbind(KS11$KS11.Close,JKSE$JKSE.Close,N225$N225.Close,
-                  TWII$TWII.Close,HSI$HSI.Close,DJI$DJI.Close,
+                  TWII$TWII.Close,STI$STI.Close,DJI$DJI.Close,
                   BVSP$BVSP.Close,FTSE$FTSE.Close,FCHI$FCHI.Close,
                   GDAXI$GDAXI.Close,GSPC$GSPC.Close,BFX$BFX.Close,MXX$MXX.Close
                   )
 write.csv(indexdata,"C:/Users/user/Desktop/國際財管作業/data/index.CSV")
 
-#EXCHANGE RATE IN QUANTILE
+#EXCHANGE RATE IN QUANTMOD
 curr_names=c("KRWHKD=X","IDRHKD=X","JPYHKD=X",
              "TWDHKD=X","SGDHKD=X","HKD=X","BRLHKD=X",
              "GBPHKD=X","EURHKD=X","MXNHKD=X")
-getSymbols(curr_names,from="2010-01-01", adjust=TRUE)
+getSymbols(curr_names,from="2010-01-01", to="2022-05-13", adjust=TRUE)
 KRW = `KRWHKD=X`[,4]
 IDR = `IDRHKD=X`[,4]
 JPY = `JPYHKD=X`[,4]
@@ -29,29 +31,54 @@ MXN = `MXNHKD=X`[,4]
 erdata = cbind(KRW, IDR, JPY, TWD, SGD, USD, BRL, GBP, EUR, EUR, USD, EUR, MXN)
 write.csv(erdata,"C:/Users/user/Desktop/國際財管作業/data/exchangerate.csv")
 
+
+#PART-1 SHARPE INEQUATION===============================================================
 #Sharpe Ratio for each Country
 sharpe1 = function(a,b){
   ret = diff(log(a)) + diff(log(b))
   ret = ret[complete.cases(ret)]#刪除遺失值
   return(ret)
-}
+}#對數取差分而已
 sharpe = function(a,b){
   ret = diff(log(a)) + diff(log(b))
   ret = ret[complete.cases(ret)]#刪除遺失值
   sr = mean(ret)/sd(ret)
   return(sr)
-}
+}#夏普值
+#SHARPE HK
 hsi_d = diff(log(HSI$HSI.Close))
 hk_sr = mean(hsi_d[complete.cases(hsi_d)])/sd(hsi_d[complete.cases(hsi_d)])
+
 fc_sr = NULL
-corre = NULL
 for (i in 1:13) {
   fc_sr[i] = sharpe(indexdata[,i], erdata[,i])
-  #相關係數算不出來
-  #corre[i] = cor(sharpe1(indexdata[,i], erdata[,i]), hsi_d[complete.cases(hsi_d)])
 }
 fc_sr/hk_sr#相關係數小於這數字都可以列入資產裡面
 
 #因為各國休市問題，要比較的話要另外開(計算相關係數)
-#下面的還在打
+corre = NULL# Correlation for each market
+fc_sr2 = NULL#Sharpe Ratio
+res = NULL
+result = NULL#Sharpe Inequation
+for(i in 1:13){
+  comp = cbind(indexdata[, i], erdata[, i], HSI$HSI.Close)
+  comp = comp[complete.cases(comp)]
+  hsi_d2 = diff(log(comp[,3]))
+  hsi_d2 = hsi_d2[complete.cases(hsi_d2)]
+  fore = sharpe1(comp[,1], comp[,2])
+  corre[i] = cor(fore, hsi_d2)
+  fc_sr2[i] = sharpe(comp[,1], comp[,2])
+  hk_sr2 = mean(hsi_d2)/sd(hsi_d2)
+  res = cbind(fc_sr2[i], corre[i] * hk_sr2, fc_sr2[i] > corre[i] * hk_sr2)
+  result = rbind(result, res)
+}
+head(comp)#原始比較資料
+head(hsi_d2)#恒生完整比較資料
+corre#相關係數
+fc_sr2#各國閜普值
+hk_sr2#香港夏普值
+result#結果[外國夏普值, 相關係數*恒生夏普值, 是否加入資產配置]
+
+
+#第二題還在打
 
