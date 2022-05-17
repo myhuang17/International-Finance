@@ -28,11 +28,17 @@ BRL = `BRLHKD=X`[,4]
 GBP = `GBPHKD=X`[,4]
 EUR = `EURHKD=X`[,4]
 MXN = `MXNHKD=X`[,4]
+for(i in 1:2347){
+  KRW[i] = KRW[i]/100
+}
+for(i in 1:91){
+  IDR[i] = IDR[i]/100
+}
 erdata = cbind(KRW, IDR, JPY, TWD, SGD, USD, BRL, GBP, EUR, EUR, USD, EUR, MXN)
 write.csv(erdata,"C:/Users/user/Desktop/國際財管作業/data/exchangerate.csv")
 
 
-#PART-1 SHARPE INEQUATION===============================================================
+#PART1-1 SHARPE RATIO===============================================================
 #Sharpe Ratio for each Country
 sharpe1 = function(a,b){
   ret = diff(log(a)) + diff(log(b))
@@ -53,8 +59,10 @@ fc_sr = NULL
 for (i in 1:13) {
   fc_sr[i] = sharpe(indexdata[,i], erdata[,i])
 }
-fc_sr/hk_sr#相關係數小於這數字都可以列入資產裡面
+one = rbind(hk_sr, fc_sr)
+two = fc_sr/hk_sr#相關係數小於這數字都可以列入資產裡面
 
+#PART1-2 SHARPE INEQUATION===============================================================
 #因為各國休市問題，要比較的話要另外開(計算相關係數)
 corre = NULL# Correlation for each market
 fc_sr2 = NULL#Sharpe Ratio
@@ -75,10 +83,9 @@ for(i in 1:13){
 head(comp)#原始比較資料
 head(hsi_d2)#恒生完整比較資料
 corre#相關係數
+hk_sr 
 fc_sr2#各國閜普值
 hk_sr2#香港夏普值
 result#結果[外國夏普值, 相關係數*恒生夏普值, 是否加入資產配置]
-
-
-#第二題還在打
+write.csv(result,"C:/Users/user/Desktop/國際財管作業/result.csv")
 
