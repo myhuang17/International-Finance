@@ -89,3 +89,28 @@ hk_sr2#香港夏普值
 result#結果[外國夏普值, 相關係數*恒生夏普值, 是否加入資產配置]
 write.csv(result,"C:/Users/user/Desktop/國際財管作業/result.csv")
 
+#PART 2 組合演算法===============================================================
+p2 = result[,1] / result[,2]#sort and the biggest one should be the first one
+sortmarket = order(p2, decreasing = TRUE)
+
+USES = NULL
+x=0
+for(i in sortmarket){
+  x = x + 1
+  comp = cbind(indexdata[, i], erdata[, i], HSI$HSI.Close)
+  comp = comp[complete.cases(comp)]
+  hsi_d3 = diff(log(comp[,3]))
+  hsi_d3 = hsi_d3[complete.cases(hsi_d3)]
+  if(x==1){
+    oldfore = hsi_d3
+    newratio = hk_sr2
+  }
+  if(fc_sr2[i] > corre[i] * newratio){
+    fore = sharpe1(comp[,1], comp[,2])
+    newratio = sharpe(fore, oldfore)
+    oldfore = sharpe1(fore, oldfore)
+    USES[i] = 1
+  }else{
+    USES[i] = 0
+  }
+}
